@@ -1,3 +1,15 @@
+from flask import Flask, send_from_directory
+import threading
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return send_from_directory('.', 'index.html')
+
+def run_flask():
+    app.run(host='0.0.0.0', port=5000)
+
 import asyncio
 import json
 import time
@@ -33,20 +45,11 @@ async def start_ws():
 def start_http():
     server = HTTPServer(("0.0.0.0", HTTP_PORT), SimpleHTTPRequestHandler)
     server.serve_forever()
-
 if __name__ == "__main__":
-    # تشغيل السيرفرات في الخلفية
+    # تشغيل سيرفر الروابط (Flask) في الخلفية
+    threading.Thread(target=run_flask, daemon=True).start()
+
+    # كودك الأصلي (راكوان) يبقى كما هو هنا
     threading.Thread(target=start_http, daemon=True).start()
-    
-    print("\n" + "="*40)
-    print("[*] Generating Public Link (Please Wait...)")
-    print("="*40)
-
-    # فتح نفق تلقائي بدون Ngrok وبدون حساب (باستخدام Localhost.run)
-    # ملاحظة: هذا الأمر يحتاج وجود ssh مثبت في جهازك (موجود تلقائياً في أغلب الأنظمة)
-    os_command = f"ssh -R 80:localhost:{HTTP_PORT} localhost.run"
-    print(f"\n[!] RUN THIS IN A NEW TERMINAL TO GET LINK:")
-    print(f"👉 {os_command}")
-    print("\n" + "="*40)
-
     asyncio.run(start_ws())
+
